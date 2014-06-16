@@ -1,0 +1,3 @@
+/public
+/bin/*
+!/bin/lib.php
