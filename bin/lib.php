@@ -5,11 +5,10 @@ error_reporting(-1);
 
 require_once('config.php');
 
-$con = mysqli_connect($db_host, $db_username, $db_password, $db_dbname);
+$con = mysqli_connect($db_host, $db_user, $db_password, $db_dbname);
 if (mysqli_connect_errno())
 {
-	echo "Nevarēja pieslēgties MySQL datubāzes serverim: " . mysqli_connect_error();
-	exit();
+	throw new Exception("Nevarēja pieslēgties MySQL datubāzes serverim: " . mysqli_connect_error());
 }
 
 function escape($string)
@@ -21,10 +20,15 @@ function escape($string)
 
 function query($query)
 {
-	$res = mysql_query($query);
+	global $con;
 
-	if (mysqli_errno())
-		throw 'MySQL error ' . mysql_errno() . ' ' . mysql_error();
+	$res = mysqli_query($con, $query);
+
+	if ($res === false)
+		throw new Exception('res is false.');
+
+	if (mysqli_errno($con))
+		throw new Exception('MySQL error ' . mysqli_errno($con) . ' ' . mysqli_error($con));
 
 	return $res;
 }
@@ -33,7 +37,7 @@ function register($username, $password)
 {
 	$_username = escape($username);
 	$_password = escape($password);
-	$query = spritnf('
+	$query = sprintf('
 		select id 
 		from user 
 		where username = "%s"
@@ -60,7 +64,7 @@ function login($username, $password)
 	$_username = escape($username);
 	$_password = escape($password);
 
-	$query = sprinf('
+	$query = sprintf('
 		select id
 		from user
 		where password = "%s"
