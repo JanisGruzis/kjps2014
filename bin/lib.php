@@ -14,7 +14,7 @@ if (mysqli_connect_errno())
 function escape($string)
 {
 	$string = mysql_real_escape_string($string);
-	$string = htmlentities($string, ENT_QUOTES);
+	$string = htmlentities($string, ENT_QUOTES, 'UTF-8');
 	return $string;
 }
 
@@ -24,13 +24,20 @@ function query($query)
 
 	$res = mysqli_query($con, $query);
 
-	if ($res === false)
-		throw new Exception('res is false.');
-
 	if (mysqli_errno($con))
 		throw new Exception('MySQL error ' . mysqli_errno($con) . ' ' . mysqli_error($con));
 
 	return $res;
+}
+
+function get_all($res)
+{
+	$ans = array();
+	while ($row = mysqli_fetch_array($res))
+	{
+		$ans[] = $row;
+	}
+	return $ans;
 }
 
 function register($username, $password)
@@ -115,9 +122,10 @@ function getUsers()
 	$query = '
 		select * 
 		from user
+		order by username
 	';
 	$res = query($query);
-	return mysqli_fetch_all($res, MYSQLI_ASSOC);
+	return get_all($res);
 }
 
 function getMessages($ids = array())
@@ -139,6 +147,7 @@ function getMessages($ids = array())
 			select id, username as receaver
 			from user
 		) r on m.receaver_id = r.id
+		order by time desc
 	';
 	if ($ids)
 		$query .= sprintf('
@@ -146,10 +155,10 @@ function getMessages($ids = array())
 				or (author_id in (%s) and receaver_id = %d)
 		', $ids, $id, $ids, $id);
 	$res = query($query);
-	return mysqli_fetch_all($res, MYSQLI_ASSOC);
+	return get_all($res);
 }
 
-function addMessage($message, $userId)
+function addMessage($message, $userId = null)
 {
 	if (!isLoggedIn()) return false;
 	
@@ -159,8 +168,8 @@ function addMessage($message, $userId)
 	$query = sprintf('
 		insert into message
 		(time, message, author_id, receaver_id)
-		values ("%s", "%s", %d, %d)
-	', date('Y-m-d H:i:s'), $message, $id, $userId);
+		values ("%s", "%s", %d, %s)
+	', date('Y-m-d H:i:s'), $message, $id, ($userId === null ? 'NULL' : $userId + '.'));
 	query($query);
 	return true;	
 }

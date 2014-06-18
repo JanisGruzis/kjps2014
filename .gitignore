@@ -2,3 +2,4 @@
 /bin/*
 !/bin/lib.php
 /test
+/backup
