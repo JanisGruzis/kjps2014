@@ -42,8 +42,9 @@ function get_all($res)
 
 function register($username, $password)
 {
-	$_username = escape($username);
-	$_password = escape($password);
+	$_username = trim(escape($username));
+	$_password = trim(escape($password));
+	if (!$_username && !$_password) return false;
 	$query = sprintf('
 		select id 
 		from user 
@@ -128,7 +129,7 @@ function getUsers()
 	return get_all($res);
 }
 
-function getMessages($ids = array())
+function getMessages($ids = array(), $limit = null)
 {
 	if (!isLoggedIn()) return false;
 
@@ -147,20 +148,29 @@ function getMessages($ids = array())
 			select id, username as receaver
 			from user
 		) r on m.receaver_id = r.id
-		order by time desc
 	';
 	if ($ids)
 		$query .= sprintf('
 			where (receaver_id in (%s) and author_id = %d)
 				or (author_id in (%s) and receaver_id = %d)
 		', $ids, $id, $ids, $id);
+	$query .= '
+		order by time desc
+	';
+	if ($limit !== null) {
+		$limit = escape($limit);
+		$query .= '
+			limit ' . $limit . '
+		';
+	}
 	$res = query($query);
 	return get_all($res);
 }
 
 function addMessage($message, $userId = null)
 {
-	if (!isLoggedIn()) return false;
+	$message = trim($message);
+	if (!isLoggedIn() || !$message) return false;
 	
 	$id = escape($_SESSION['user']['id']);
 	$message = escape($message);
